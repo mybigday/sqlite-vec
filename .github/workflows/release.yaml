@@ -1,7 +1,10 @@
 name: "Release"
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+  push:
+    tags:
+      - v*
+
 permissions:
   contents: read
 jobs:
@@ -181,189 +184,189 @@ jobs:
         with:
           name: sqlite-vec-${{ matrix.platforms.name }}-extension
           path: dist/*
-  dist:
-    runs-on: ubuntu-latest
-    needs:
-      [
-        build-linux-x86_64-extension,
-        build-macos-x86_64-extension,
-        build-macos-aarch64-extension,
-        build-windows-x86_64-extension,
-        build-wasm32-emscripten,
-        build-android-extensions,
-        build-ios-extensions,
-      ]
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-linux-x86_64-extension
-          path: dist/linux-x86_64
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-linux-aarch64-extension
-          path: dist/linux-aarch64
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-macos-x86_64-extension
-          path: dist/macos-x86_64
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-macos-aarch64-extension
-          path: dist/macos-aarch64
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-windows-x86_64-extension
-          path: dist/windows-x86_64
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-wasm32-emscripten
-          path: dist/wasm32-emscripten
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-android-aarch64-extension
-          path: dist/android-aarch64
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-android-i686-extension
-          path: dist/android-i686
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-android-x86_64-extension
-          path: dist/android-x86_64
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-android-armv7a-extension
-          path: dist/android-armv7a
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-android-armv7a-extension
-          path: dist/android-armv7a
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-ios-aarch64-extension
-          path: dist/ios-aarch64
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-iossimulator-aarch64-extension
-          path: dist/iossimulator-aarch64
-      - uses: actions/download-artifact@v4
-        with:
-          name: sqlite-vec-iossimulator-x86_64-extension
-          path: dist/iossimulator-x86_64
-      - run: |
-          curl -L https://github.com/asg017/sqlite-dist/releases/download/v0.0.1-alpha.17/sqlite-dist-x86_64-unknown-linux-gnu.tar.xz \
-            | tar xfJ - --strip-components 1
-      - run: make sqlite-vec.h
-      - run: ./sqlite-dist ./sqlite-dist.toml --input dist/ --output distx/ --version $(cat VERSION)
-      - run: |
-          gh release upload ${{ github.ref_name }} \
-            distx/amalgamation/* \
-            distx/github_releases/* \
-            distx/spm/* \
-            distx/sqlpkg/* \
-            distx/checksums.txt \
-            distx/sqlite-dist-manifest.json \
-            distx/install.sh
-        env:
-          GH_TOKEN: ${{ github.token }}
-      - name: Install node
-        uses: actions/setup-node@v3
-        with:
-          node-version: "16"
-          registry-url: "https://registry.npmjs.org"
-      - run: |
-          npm publish --access public distx/npm/sqlite-vec-darwin-arm64.tar.gz
-          npm publish --access public distx/npm/sqlite-vec-darwin-x64.tar.gz
-          npm publish --access public distx/npm/sqlite-vec-linux-x64.tar.gz
-          npm publish --access public distx/npm/sqlite-vec-linux-arm64.tar.gz
-          npm publish --access public distx/npm/sqlite-vec-windows-x64.tar.gz
-          npm publish --access public distx/npm/sqlite-vec-wasm-demo.tar.gz
-          npm publish --access public distx/npm/sqlite-vec.tar.gz
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.2
-      - run: |
-          for file in distx/gem/*; do
-            gem push  "$file"
-          done
-        env:
-          GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install twine
-      - run: |
-          twine upload distx/pip/*
-          twine upload distx/datasette/*
-          twine upload distx/sqlite_utils/*
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-  upload-crate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - run: ./scripts/vendor.sh
-      - run: make sqlite-vec.h
-      - run: make deps
-        working-directory: ./bindings/rust
-      - run: cargo publish --no-verify
-        working-directory: ./bindings/rust
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+  # dist:
+  #   runs-on: ubuntu-latest
+  #   needs:
+  #     [
+  #       build-linux-x86_64-extension,
+  #       build-macos-x86_64-extension,
+  #       build-macos-aarch64-extension,
+  #       build-windows-x86_64-extension,
+  #       build-wasm32-emscripten,
+  #       build-android-extensions,
+  #       build-ios-extensions,
+  #     ]
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-linux-x86_64-extension
+  #         path: dist/linux-x86_64
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-linux-aarch64-extension
+  #         path: dist/linux-aarch64
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-macos-x86_64-extension
+  #         path: dist/macos-x86_64
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-macos-aarch64-extension
+  #         path: dist/macos-aarch64
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-windows-x86_64-extension
+  #         path: dist/windows-x86_64
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-wasm32-emscripten
+  #         path: dist/wasm32-emscripten
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-android-aarch64-extension
+  #         path: dist/android-aarch64
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-android-i686-extension
+  #         path: dist/android-i686
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-android-x86_64-extension
+  #         path: dist/android-x86_64
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-android-armv7a-extension
+  #         path: dist/android-armv7a
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-android-armv7a-extension
+  #         path: dist/android-armv7a
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-ios-aarch64-extension
+  #         path: dist/ios-aarch64
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-iossimulator-aarch64-extension
+  #         path: dist/iossimulator-aarch64
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: sqlite-vec-iossimulator-x86_64-extension
+  #         path: dist/iossimulator-x86_64
+  #     - run: |
+  #         curl -L https://github.com/asg017/sqlite-dist/releases/download/v0.0.1-alpha.17/sqlite-dist-x86_64-unknown-linux-gnu.tar.xz \
+  #           | tar xfJ - --strip-components 1
+  #     - run: make sqlite-vec.h
+  #     - run: ./sqlite-dist ./sqlite-dist.toml --input dist/ --output distx/ --version $(cat VERSION)
+  #     - run: |
+  #         gh release upload ${{ github.ref_name }} \
+  #           distx/amalgamation/* \
+  #           distx/github_releases/* \
+  #           distx/spm/* \
+  #           distx/sqlpkg/* \
+  #           distx/checksums.txt \
+  #           distx/sqlite-dist-manifest.json \
+  #           distx/install.sh
+  #       env:
+  #         GH_TOKEN: ${{ github.token }}
+  #     - name: Install node
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: "16"
+  #         registry-url: "https://registry.npmjs.org"
+  #     - run: |
+  #         npm publish --access public distx/npm/sqlite-vec-darwin-arm64.tar.gz
+  #         npm publish --access public distx/npm/sqlite-vec-darwin-x64.tar.gz
+  #         npm publish --access public distx/npm/sqlite-vec-linux-x64.tar.gz
+  #         npm publish --access public distx/npm/sqlite-vec-linux-arm64.tar.gz
+  #         npm publish --access public distx/npm/sqlite-vec-windows-x64.tar.gz
+  #         npm publish --access public distx/npm/sqlite-vec-wasm-demo.tar.gz
+  #         npm publish --access public distx/npm/sqlite-vec.tar.gz
+  #       env:
+  #         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  #     - uses: ruby/setup-ruby@v1
+  #       with:
+  #         ruby-version: 3.2
+  #     - run: |
+  #         for file in distx/gem/*; do
+  #           gem push  "$file"
+  #         done
+  #       env:
+  #         GEM_HOST_API_KEY: ${{ secrets.GEM_HOST_API_KEY }}
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12"
+  #     - run: pip install twine
+  #     - run: |
+  #         twine upload distx/pip/*
+  #         twine upload distx/datasette/*
+  #         twine upload distx/sqlite_utils/*
+  #       env:
+  #         TWINE_USERNAME: __token__
+  #         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+  # upload-crate:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
+  #     - run: ./scripts/vendor.sh
+  #     - run: make sqlite-vec.h
+  #     - run: make deps
+  #       working-directory: ./bindings/rust
+  #     - run: cargo publish --no-verify
+  #       working-directory: ./bindings/rust
+  #       env:
+  #         CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
-  build-ncruces-go:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - run: make sqlite-vec.h
-      - uses: actions/checkout@v4
-        with:
-          repository: ncruces/go-sqlite3
-          path: go-sqlite3
-      - run: git apply ../bindings/go/ncruces/go-sqlite3.patch
-        working-directory: go-sqlite3/
-      - run: |
-          mkdir -p tools/
-          [ -d "tools/wasi-sdk" ] || curl -#L "$WASI_SDK" | tar xzC tools &
-          [ -d "tools/binaryen" ] || curl -#L "$BINARYEN" | tar xzC tools &
-          wait
+  # build-ncruces-go:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - run: make sqlite-vec.h
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         repository: ncruces/go-sqlite3
+  #         path: go-sqlite3
+  #     - run: git apply ../bindings/go/ncruces/go-sqlite3.patch
+  #       working-directory: go-sqlite3/
+  #     - run: |
+  #         mkdir -p tools/
+  #         [ -d "tools/wasi-sdk" ] || curl -#L "$WASI_SDK" | tar xzC tools &
+  #         [ -d "tools/binaryen" ] || curl -#L "$BINARYEN" | tar xzC tools &
+  #         wait
 
-          mv "tools/wasi-sdk"* "tools/wasi-sdk"
-          mv "tools/binaryen"* "tools/binaryen"
+  #         mv "tools/wasi-sdk"* "tools/wasi-sdk"
+  #         mv "tools/binaryen"* "tools/binaryen"
 
-          sqlite3/download.sh
-          embed/build.sh
-        env:
-          WASI_SDK: "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-23/wasi-sdk-23.0-x86_64-linux.tar.gz"
-          BINARYEN: "https://github.com/WebAssembly/binaryen/releases/download/version_118/binaryen-version_118-x86_64-linux.tar.gz"
-        working-directory: go-sqlite3/
-      - uses: actions/checkout@v4
-        with:
-          repository: asg017/sqlite-vec-go-bindings
-          path: sqlite-vec-go-bindings
-          token: ${{secrets.NCRUCES_BINDINGS_REPO_PAT}}
-      - run: |
-          cp go-sqlite3/embed/sqlite3.wasm sqlite-vec-go-bindings/ncruces/sqlite3.wasm
-          cp sqlite-vec.c sqlite-vec-go-bindings/cgo/sqlite-vec.c
-          cp sqlite-vec.h sqlite-vec-go-bindings/cgo/sqlite-vec.h
-      - run: |
-          git config user.name "Alex Garcia"
-          git config user.email "alexsebastian.garcia@gmail.com"
-          git add .
-          git commit --allow-empty -m "AUTOMATED ${{ github.ref_name }}" || exit 0
-          git tag  "${{ github.ref_name }}"
-          git push origin main "${{ github.ref_name }}"
-        working-directory: sqlite-vec-go-bindings
-        env:
-          GITHUB_TOKEN: ${{secrets.NCRUCES_BINDINGS_REPO_PAT}}
+  #         sqlite3/download.sh
+  #         embed/build.sh
+  #       env:
+  #         WASI_SDK: "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-23/wasi-sdk-23.0-x86_64-linux.tar.gz"
+  #         BINARYEN: "https://github.com/WebAssembly/binaryen/releases/download/version_118/binaryen-version_118-x86_64-linux.tar.gz"
+  #       working-directory: go-sqlite3/
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         repository: asg017/sqlite-vec-go-bindings
+  #         path: sqlite-vec-go-bindings
+  #         token: ${{secrets.NCRUCES_BINDINGS_REPO_PAT}}
+  #     - run: |
+  #         cp go-sqlite3/embed/sqlite3.wasm sqlite-vec-go-bindings/ncruces/sqlite3.wasm
+  #         cp sqlite-vec.c sqlite-vec-go-bindings/cgo/sqlite-vec.c
+  #         cp sqlite-vec.h sqlite-vec-go-bindings/cgo/sqlite-vec.h
+  #     - run: |
+  #         git config user.name "Alex Garcia"
+  #         git config user.email "alexsebastian.garcia@gmail.com"
+  #         git add .
+  #         git commit --allow-empty -m "AUTOMATED ${{ github.ref_name }}" || exit 0
+  #         git tag  "${{ github.ref_name }}"
+  #         git push origin main "${{ github.ref_name }}"
+  #       working-directory: sqlite-vec-go-bindings
+  #       env:
+  #         GITHUB_TOKEN: ${{secrets.NCRUCES_BINDINGS_REPO_PAT}}
